@@ -32,8 +32,8 @@ struct texts
     char content[1000][200];
 };
 char commands[14][100]={"createfile --file","insertstr --file","cat",
-                        "removestr","copystr","cutstr","paststr","find","replace",
-                        "grep","undo","auto-indent","compare","tree"};
+                        "removetstr --file","copystr","cutstr","pastestr --file","undo --file","compare","find","replace",
+                        "grep","auto-indent","tree"};
 char address_taghti_shode[100][100];
 char clipboard[200000];
 
@@ -255,7 +255,7 @@ int get_file_content(char filename[],struct texts* text){
     while((ch = fgetc(file))!=EOF) {
         if (ch=='\0' || ch=='\n')
         {
-            text->content[lines][characters]='\n';
+            text->content[lines][characters]='\0';
             lines++;
             characters=0;
         }
@@ -350,8 +350,6 @@ int pr_create_file(char string[]){
     createfile(folder,name);
 }
 void createfile(char folder_names[],char file_name[]){
-    printf("folder_names=%s\n",folder_names);
-    printf("file_name=%s\n",file_name);
     int t= tafkik_address(folder_names);
     char address[150]="root";
     mkdir(address);
@@ -359,7 +357,6 @@ void createfile(char folder_names[],char file_name[]){
     {
     strcat(address,"/");
     strcat(address,address_taghti_shode[i]);
-    printf("address=%s\n",address);
     mkdir(address);
     }
     strcat(address,"/");
@@ -445,12 +442,32 @@ void insert(char filename[], int line, int char_num, char string[]){
                 change_one_char(text,line,(char_num)%200,string[i+1]);
                 i++;
             }
-            else{
-                change_one_char(text,line,(char_num)%200,string[i]);
-            }        
         }
+        else{
+                change_one_char(text,line,(char_num)%200,string[i]);
+        }        
     }
     overwriting(filename,text); 
+}
+
+
+int pr_cat(char string[]){
+    int l=strlen(string);
+    char file1[l],file[l],folder[l],name[l];
+    int f=payan_yab(string,"cat --file");
+    str_to_str(file1,string,f+1,l-1);
+    if (first_ch(file1,'"')!=-1 && last_ch(file1,'"')!=-1)
+    {
+        str_to_str(file,file1,first_ch(file1,'"')+1,last_ch(file1,'"')-1);
+    }
+    else if (first_ch(file1,' ')!=-1 && last_ch(file1,' ')!=-1){
+        str_to_str(file,file1,first_ch(file1,' ')+1,l-1);
+    }
+    str_to_str(folder,file,first_ch(file,'/')+1,last_ch(file,'/')-1);
+    str_to_str(name,file,last_ch(file,'/'),l-1);
+    strcpy(file,folder);
+    strcat(file,name);
+    cat(file);
 }
 void cat(char filename[]){
     FILE *fptr;
@@ -463,6 +480,7 @@ void cat(char filename[]){
     }
     fclose(fptr);
 }
+
 void line_swap(struct texts* text, int line1, int line2){ //line1 to line2
     int i;
     int l=strlen(text->content[line1]);
@@ -504,15 +522,57 @@ void del_fl(struct texts* text, int line){
         text->content[line][i]=NULL;
     }    
 }
+int pr_remove(char string[]){
+    int l=strlen(string),num,line_n,char_n,md;
+    char part1[l],part2[l],part3[l],pos[l],buf1[l],buf2[l],buf3[l];
+    char mode,file[l];
+    str_to_str(part1,string,payan_yab(string,"--file")+1,start_yab(string,"--pos")-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(file,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(file,part1,first_ch(part1,' ')+1,l-1);
+    }
+    str_to_str(part1,file,first_ch(part1,'/'),strlen(part1)-1);
+    strcpy(file,part1);
+    str_to_str(part2,string,payan_yab(string,"--pos")+1,start_yab(string,"-size")-1);
+    if (first_ch(part2,'"')!=-1 && last_ch(part2,'"')!=-1)
+    {
+        str_to_str(pos,part2,first_ch(part2,'"')+1,l-1);
+    }
+    else if (first_ch(part2,' ')!=-1 && last_ch(part2,' ')!=-1){
+        str_to_str(pos,part2,first_ch(part2,' ')+1,l-1);
+    }
+    str_to_str(buf1,pos,0,first_ch(pos,':')-1);
+    str_to_str(buf2,pos,first_ch(pos,':')+1,strlen(pos)-2);
+    line_n=convet_to_num(buf1);
+    char_n=convet_to_num(buf2);
+    str_to_str(part3,string,payan_yab(string,"-size")+1,l-1);
+    str_to_str(buf1,part3,first_ch(part3,' ')+1,last_ch(part3,' ')-1);
+    num=convet_to_num(buf1);
+    mode=string[l-1];
+    if (mode=='b'){
+        md=1;
+    }
+    else if(mode=='f'){
+        md=2;
+    }
+    remove_text(file,line_n,char_n,num,md);
+}
 void remove_text(char filename[],int line_n, int char_n, int size, int mode){
     struct texts * text=struct_saz();
     int i;
     get_file_content(filename,text);
+    printf("line=%d\n",line_n);
+    printf("1=%s\n",text->content[1]);
     file_backup(filename);
     if (mode==1){
         for ( i = 0; i < size; i++)
         {
+            printf("1=%s\n",text->content[line_n]);
             del_b(text,line_n,char_n);
+            printf("2=%s\n",text->content[line_n]);
             char_n--;
             if (char_n==0)
             {
@@ -520,7 +580,10 @@ void remove_text(char filename[],int line_n, int char_n, int size, int mode){
                 char_n=tedad_char_line(text,line_n)-1;
                 i++;
                 del_bl(text,line_n+1);
-                line_swap(text,line_n+2,line_n+1);
+                for ( i = 0; i < (text->line-1-line_n); i++)
+                {
+                    line_swap(text,i+line_n+2,i+line_n+1);
+                }                
                 text->line--;
             }            
         }        
@@ -538,7 +601,47 @@ void remove_text(char filename[],int line_n, int char_n, int size, int mode){
             }            
         }        
     }
+    printf("hoi!");
     overwriting(filename,text);
+}
+
+int pr_copy(char string[]){
+    int l=strlen(string),num,line_n,char_n,md;
+    char part1[l],part2[l],part3[l],pos[l],buf1[l],buf2[l],buf3[l];
+    char mode,file[l];
+    str_to_str(part1,string,payan_yab(string,"--file")+1,start_yab(string,"--pos")-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(file,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(file,part1,first_ch(part1,' ')+1,l-1);
+    }
+    str_to_str(part1,file,first_ch(part1,'/'),strlen(part1)-1);
+    strcpy(file,part1);
+    str_to_str(part2,string,payan_yab(string,"--pos")+1,start_yab(string,"-size")-1);
+    if (first_ch(part2,'"')!=-1 && last_ch(part2,'"')!=-1)
+    {
+        str_to_str(pos,part2,first_ch(part2,'"')+1,l-1);
+    }
+    else if (first_ch(part2,' ')!=-1 && last_ch(part2,' ')!=-1){
+        str_to_str(pos,part2,first_ch(part2,' ')+1,l-1);
+    }
+    str_to_str(buf1,pos,0,first_ch(pos,':')-1);
+    str_to_str(buf2,pos,first_ch(pos,':')+1,strlen(pos)-2);
+    line_n=convet_to_num(buf1);
+    char_n=convet_to_num(buf2);
+    str_to_str(part3,string,payan_yab(string,"-size")+1,l-1);
+    str_to_str(buf1,part3,first_ch(part3,' ')+1,last_ch(part3,' ')-1);
+    num=convet_to_num(buf1);
+    mode=string[l-1];
+    if (mode=='b'){
+        md=1;
+    }
+    else if(mode=='f'){
+        md=2;
+    }
+    copy(file,line_n,char_n,num,md);
 }
 void copy(char filename[],int line_n, int char_n, int size, int mode){
     struct texts * text=struct_saz();
@@ -580,25 +683,155 @@ void copy(char filename[],int line_n, int char_n, int size, int mode){
     clipboard[size]='\0';       
     overwriting("ali.txt",text);
 }
+
+int pr_cut(char string[]){
+    int l=strlen(string),num,line_n,char_n,md;
+    char part1[l],part2[l],part3[l],pos[l],buf1[l],buf2[l],buf3[l];
+    char mode,file[l];
+    str_to_str(part1,string,payan_yab(string,"--file")+1,start_yab(string,"--pos")-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(file,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(file,part1,first_ch(part1,' ')+1,l-1);
+    }
+    str_to_str(part1,file,first_ch(part1,'/'),strlen(part1)-1);
+    strcpy(file,part1);
+    str_to_str(part2,string,payan_yab(string,"--pos")+1,start_yab(string,"-size")-1);
+    if (first_ch(part2,'"')!=-1 && last_ch(part2,'"')!=-1)
+    {
+        str_to_str(pos,part2,first_ch(part2,'"')+1,l-1);
+    }
+    else if (first_ch(part2,' ')!=-1 && last_ch(part2,' ')!=-1){
+        str_to_str(pos,part2,first_ch(part2,' ')+1,l-1);
+    }
+    str_to_str(buf1,pos,0,first_ch(pos,':')-1);
+    str_to_str(buf2,pos,first_ch(pos,':')+1,strlen(pos)-2);
+    line_n=convet_to_num(buf1);
+    char_n=convet_to_num(buf2);
+    str_to_str(part3,string,payan_yab(string,"-size")+1,l-1);
+    str_to_str(buf1,part3,first_ch(part3,' ')+1,last_ch(part3,' ')-1);
+    num=convet_to_num(buf1);
+    mode=string[l-1];
+    if (mode=='b'){
+        md=1;
+    }
+    else if(mode=='f'){
+        md=2;
+    }
+    copy(file,line_n,char_n,num,md);
+}
 void cut(char filename[],int line_n, int char_n, int size, int mode){
     copy(filename, line_n, char_n, size, mode);
     remove_text(filename, line_n, char_n, size, mode);
 }
-void past(char filename[],int line_n, int char_n){
+
+int pr_paste(char string[]){
+    int l=strlen(string),i;
+    char file[l],file1[l];
+    char pos[l],pos1[l];
+    char num1[l],num2[l];
+    int f1,p1,f2,p2;
+    f1=start_yab(string,"--file");
+    f2=payan_yab(string,"--file");
+    p1=start_yab(string,"--pos");
+    p2=payan_yab(string,"--pos");  
+
+    str_to_str(file1,string,f2+1,p1-1);
+    str_to_str(pos1,string,p2+1,l-1);
+
+    if (first_ch(file1,'"')!=-1 && last_ch(file1,'"')!=-1)
+    {
+        str_to_str(file,file1,first_ch(file1,'"')+1,last_ch(file1,'"')-1);
+    }
+    else if (first_ch(file1,' ')!=-1 && last_ch(file1,' ')!=-1){
+        str_to_str(file,file1,first_ch(file1,' ')+1,last_ch(file1,' ')-1);
+    }
+
+    
+    if (first_ch(pos1,'"')!=-1 && last_ch(pos1,'"')!=-1)
+    {
+        str_to_str(pos,pos1,first_ch(pos1,'"')+1,l-1);
+    }
+    else if (first_ch(pos1,' ')!=-1 && last_ch(pos1,' ')!=-1){
+        str_to_str(pos,pos1,first_ch(pos1,' ')+1,l-1);
+    }
+
+    str_to_str(num1,pos,0,first_ch(pos,':')-1);
+    str_to_str(num2,pos,first_ch(pos,':')+1,l-1);
+    int n1=convet_to_num(num1);
+    int n2=convet_to_num(num2);
+    str_to_str(file1,file,first_ch(file1,'/')+1,last_ch(file1,' ')-1);
+    paste(file1,n1,n2);
+
+}
+void paste(char filename[],int line_n, int char_n){
     insert(filename,line_n,char_n,clipboard);
+}
+
+int pr_undo(char string[]){
+    int l= strlen(string);
+    char part1[l],file[l];
+    str_to_str(part1,string,payan_yab(string,"--file")+1,l-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(file,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(file,part1,first_ch(part1,' ')+1,strlen(part1)-1);
+    }
+    str_to_str(part1,file,first_ch(file,'/')+1,strlen(file)-1);
+    strcpy(file,part1);
+    printf("%s\n",file);
+    undo(file);
 }
 void undo (char filename[]){
     FILE *fptr1, *fptr2;
-    char c,b_file_name[100]="b_";
-    strcat(b_file_name,filename);
-    fptr1 = fopen(b_file_name, "r");
-    fptr2 = fopen(filename, "w");
-    c = fgetc(fptr1);
-    while (c!= EOF){
-        putc(c,fptr2);
-        c = fgetc(fptr1);
-    } 
+    char c,b_file_name[1000],cd1[1000],cd2[1000]="b_";
+    str_to_str(b_file_name,filename,0,last_ch(filename,'/'));
+    str_to_str(cd1,filename,last_ch(filename,'/')+1,strlen(filename)-1);
+    strcat(cd2,cd1);
+    strcat(b_file_name,cd2);
+    struct texts * text= struct_saz();
+    get_file_content(b_file_name,text);
+    printf("%s\n",text->content[1]);
+    overwriting(filename,text);
     
+}
+
+int pr_compare(char string[]){
+    int l= strlen(string);
+    char part1[l],part2[l],name1[l],name2[l];
+    int t,p1,p2,p3,p4;
+    str_to_str(part1,string,payan_yab(string,"compare")+1,l-1);
+    if (nom_ch(part1,'"',1)!=-1)
+    {
+        p1=nom_ch(part1,'"',1);
+        t=t+1;
+    }
+    if (nom_ch(part1,'"',2)!=-1)
+    {
+        p2=nom_ch(part1,'"',2);
+        t=t+1;
+    }
+    if (nom_ch(part1,'"',3)!=-1)
+    {
+        p3=nom_ch(part1,'"',3);
+        t=t+1;
+    }
+    if (nom_ch(part1,'"',4)!=-1)
+    {
+        p4=nom_ch(part1,'"',4);
+        t=t+1;
+    }
+    
+    str_to_str(name1,part1,nom_ch(part1,' ',1)+1,nom_ch(part1,' ',2)-1);
+    str_to_str(name2,part1,nom_ch(part1,' ',2)+1,strlen(part1)-1);
+    str_to_str(part1,name1,first_ch(name1,'/')+1,strlen(name1)-1);
+    str_to_str(part2,name2,first_ch(name2,'/')+1,strlen(name2)-1);
+
+    compare(part1,part2);
 }
 void compare(char filename1[],char filename2[]){
     int i;
@@ -608,32 +841,36 @@ void compare(char filename1[],char filename2[]){
     get_file_content(filename2,text2);
     int l1=text1->line;
     int l2=text2->line;
+    printf("%d %d\n",l1,l2);
     int min=(l1>l2)*l2+(l2>=l1)*l1;
-    for ( i = 0; i < min; i++)
+    printf("%d\n",min);
+    for ( i = 1; i <= min; i++)
     {
         if (check_e2s(text1->content[i],text2->content[i])==0){
             printf("============ #<%d> ============\n",i);
-            printf("%s",text1->content[i]);
-            printf("%s",text2->content[i]);
+            printf("%s\n",text1->content[i]);
+            printf("%s\n",text2->content[i]);            
         }
     }
     if (l1>l2)
     {
-        printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",min,l1-1);
+        printf("<<<<<<<<<<<< #%d - #%d <<<<<<<<<<<<\n",min+1,l1);
         for ( i = min; i < l1; i++)
         {
-            printf("%s",text1->content[i]);
+            printf("%s\n",text1->content[i]);
         }
     }
     if (l2>l1)
     {
-        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",min,l2-1);
+        printf(">>>>>>>>>>>> #%d - #%d >>>>>>>>>>>>\n",min+1,l2);
         for ( i = min; i < l2; i++)
         {
-            printf("%s",text2->content[i]);
+            printf("%s\n",text2->content[i]);
         }
     }    
 }
+
+
 int check_wild(char *str1, char *str2) 
 { 
     if (*str1 != ' ' && *str2 == ' ')
@@ -809,6 +1046,119 @@ int find_w(int n, int A[],int B[],char string1[], char string2[]){
     }
 
 }
+
+int min(int p1, int p2, int p3, int p4){
+    int min=10000;
+    if (p1!=-1 && p1<min)
+    {
+        min=p1;
+    }
+    if (p2!=-1 && p2<min){
+        min=p2;
+    }
+    if (p3!=-1 && p3<min){
+        min=p3;
+    }
+    if (p4!=-1 && p4<min){
+        min=p4;
+    }
+    return (min);    
+}
+
+int pr_find(char string[]){
+    int l=strlen(string),num=1;
+    char name[l],str[l],file[l],file2[l],jost[l];
+    str_to_str(str,string,payan_yab(string,"--str")+1,start_yab(string,"--file")-1);
+    str_to_str(file,string,payan_yab(string,"--file")+1,l-1);
+
+    int mode=1;
+    if (start_yab(file,"-count")!=-1)
+    {
+        mode*=2;
+    }
+    if (start_yab(file,"-at")!=-1)
+    {
+        mode*=3;
+        char number[l];
+        str_to_str(number,file,payan_yab(file,"at")+1,strlen(file)-1);
+        num=convet_to_num(number);
+    }
+    if (start_yab(file,"-byword")!=-1)
+    {
+        mode*=5;
+    }
+    if (start_yab(file,"-all")!=-1)
+    {
+        mode*=7;
+    }
+    if (mode!=1){
+        int p1=start_yab(file,"-all");
+        int p2=start_yab(file,"-byword");
+        int p3=start_yab(file,"-at");
+        int p4=start_yab(file,"-count");
+        int minim= min(p1,p2,p3,p4);
+        str_to_str(file2,file,0,minim-1);
+    }
+    else{
+        str_to_str(file2,file,0,strlen(file)-1);
+    }
+    if (first_ch(file2,'"')!=-1 && last_ch(file2,'"')!=-1)
+    {
+        str_to_str(name,file2,first_ch(file2,'"')+1,last_ch(file2,'"')-1);
+    }
+    else if (nom_ch(file2,' ',1)!=-1 && nom_ch(file2,' ',2)==-1){
+        str_to_str(name,file2,first_ch(file2,'/')+1,strlen(file2)-1);
+    }
+    else if ((nom_ch(file2,' ',1)!=-1 && nom_ch(file2,' ',2)!=-1)){
+        str_to_str(name,file2,first_ch(file2,'/')+1,nom_ch(file2,' ',2)-1);
+    }
+    if (first_ch(str,'"')!=-1 && last_ch(str,'"')!=-1)
+    {
+        str_to_str(jost,str,first_ch(str,'"')+1,last_ch(str,'"')-1);
+    }
+    else if (first_ch(str,' ')!=-1 && last_ch(str,' ')!=-1){
+        str_to_str(jost,str,first_ch(str,' ')+1,last_ch(str,' ')-1);
+    }
+    int md=1;
+    int n=1;
+    if (mode==1)
+    {
+        md=1;        
+    }
+    if (mode==2)
+    {
+        md=5;
+    }
+    if (mode==3)
+    {
+        md=1;
+        n=num;
+    }
+    if (mode==5)
+    {
+        md=2;
+    }
+    if (mode==7)
+    {
+        md=3;
+    }
+    if (mode==35)
+    {
+        md=4;
+    }
+    if (mode==15)
+    {
+        md=2;
+        n=num;
+    }
+    if (mode==21)
+    {
+        printf("Sorry,at and all cannot come together.\n");
+        return(-1);
+    }
+    find(name,jost,md,n);
+}
+
 int find(char filename[],char string[], int mode, int n){
     int i,j,t,tt,k;
     struct texts * text= struct_saz();
@@ -832,7 +1182,7 @@ int find(char filename[],char string[], int mode, int n){
         }
         if (t<n)
         {
-            printf("\nnot found!\n",t);
+            printf("not found!\n",t);
         }
         else{
             t=0;
@@ -857,7 +1207,7 @@ int find(char filename[],char string[], int mode, int n){
         }
         if (t<n)
         {
-            printf("\nnot found!\n",t);
+            printf("not found!\n",t);
             return(-1);
         }
         else{
@@ -884,7 +1234,7 @@ int find(char filename[],char string[], int mode, int n){
         }
         if (t==0)
         {
-            printf("\nnot found!\n");
+            printf("not found!\n");
         }
         else{
             for ( k = 1; k <= t; k++)
@@ -951,14 +1301,12 @@ int find(char filename[],char string[], int mode, int n){
         }    
 }
     if (mode==5){
-    t=0;
-    for ( i = 1; i < 1000; i++)
-    {
-        l1=strlen(text->content[i]);
-        t+=find_help(A,B,text->content[i],string,space1,space2,start1,payan1,start2,payan2);
-    }
-    }
-    else{
+        t=0;
+        for ( i = 1; i < 1000; i++)
+        {
+            l1=strlen(text->content[i]);
+            t+=find_help(A,B,text->content[i],string,space1,space2,start1,payan1,start2,payan2);
+        }
         printf("%d\n",t);
     }
 
@@ -1125,33 +1473,82 @@ int directory_tree(int depth){
     }
 }
 
+
+void matlob_saz(char string[]){
+    int l= strlen(string);
+    char temp1[l],temp2[l],temp3[l];
+    int i, t;
+    for (int i = 0; i < l; i++)
+    {
+        if (string[i]=='\\' && string[i+1]=='n' && string[i-1]!='\\'){
+            str_to_str(temp1,string,0,i-1);
+            str_to_str(temp2,"\n",0,1);
+            str_to_str(temp3,string,i+2,l-1);
+            strcpy(string,temp1);
+            strcat(string,temp2);
+            strcat(string,temp3);
+            l=l-1;
+        }
+        else if (string[i]=='\\' && string[i+1]=='n' && string[i-1]=='\\'){
+            str_to_str(temp1,string,0,i-2);
+            str_to_str(temp2,"\\n",0,2);
+            str_to_str(temp3,string,i+2,l-1);
+            strcpy(string,temp1);
+            strcat(string,temp2);
+            strcat(string,temp3);
+            l=l-2;
+            i=i+1;
+        }
+        else if (string[i]=='\\' && string[i+1]=='\"' && string[i-1]!='\\'){
+            str_to_str(temp1,string,0,i-1);
+            str_to_str(temp2,"\"",0,1);
+            str_to_str(temp3,string,i+2,l-1);
+            strcpy(string,temp1);
+            strcat(string,temp2);
+            strcat(string,temp3);
+            l=l-1;
+        }        
+    }    
+}
+
 int command_detection(char s[]){  
     int t=0;
     while (t<14)
     {
         if (check_e2s(s,commands[t])==1)
         {
-            printf("%d\n",t);
             break;
         }
         t=t+1;
     }
-    (t==0) ? pr_create_file(s) : printf("no 0\n");
-    (t==1) ? pr_insert(s) : printf("no 1\n");
-    
+    (t==0) ? pr_create_file(s) : printf("");
+    (t==1) ? pr_insert(s) : printf("");
+    (t==2) ? pr_cat(s): printf("");
+    (t==3) ? pr_remove(s) : printf("");
+    (t==4) ? pr_copy(s) : printf("");
+    (t==5) ? pr_cut(s) : printf("");
+    (t==6) ? pr_paste(s) : printf("");
+    (t==7) ? pr_undo(s) : printf("");
+    (t==8) ? pr_compare(s) : printf("");
+    (t==9) ? pr_find(s) : printf("");
     //return(-1);       
     }
 
 int main(){
     //example
-
-    //scanf("%[^\n]s",user_input);
-    //printf("%d",command_detection(user_input));
-    
-
-
-
-
+    char user_input[1000],byn[1000];
+    printf("~~~ ");
+    fgets (user_input, 1000, stdin);
+    str_to_str(byn,user_input,0,strlen(user_input)-2);
+    strcpy(user_input,byn);
+    while (strcmp(user_input,"END")) {
+        matlob_saz(user_input);
+        command_detection(user_input);
+        printf("~~~ ");
+        fgets (user_input, 1000, stdin);
+        str_to_str(byn,user_input,0,strlen(user_input)-2);
+        strcpy(user_input,byn);
+    }    
 }
 
 
