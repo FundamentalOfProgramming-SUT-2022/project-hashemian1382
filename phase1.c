@@ -2,6 +2,9 @@
 #include<string.h>
 #include<stdlib.h>
 #include <dirent.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <stdbool.h>
 
 /*-------------------------------------------------------------------------------\
 | Title: EPTE (Easy professional text editor)                                    |
@@ -9,15 +12,15 @@
 | Repository link in Github:                                                     |                                                                       
 | https://github.com/FundamentalOfProgramming-SUT-2022/project-hashemian1382     |
 +--------------------------------------------------------------------------------+
-|  AUTHOR :   Ali Hashemian                                                      |
+|  AUTHOR :   Ali Hashemian       EMAIL: aho.hashemian@gmail.com                 |
 +--------------------------------------------------------------------------------|
-| Version: 0.9.1     Date of last revision: 2023-1-23                            |
+| Version: 1.0.0     Date of last revision: 2023-02-04 *** 1401-11-15            |
 +--------------------------------------------------------------------------------+
 | DESCRIPTION:                                                                   |
 |        This program is designed as the final project                           | 
 |        of the Fundamental of Programming course of SUT.                        |
 |        This program is actually a simulation of Vim.                           |
-|        I named it EPTE, which stands for Easy professional text editor :)      | 
+|        I named it EPTE, which stands for Easy professional text editor.        | 
 |        For more information, read the project's readme,                        |
 |        which is accessible on the project's GitHub page.                       |                                                        |
 |                                                                                |
@@ -36,8 +39,6 @@ char commands[14][100]={"createfile --file","insertstr --file","cat",
                         "grep","auto-indent","tree"};
 char address_taghti_shode[100][100];
 char clipboard[200000];
-
-
 
 struct texts * struct_saz(){
     struct texts * text = (struct texts *) malloc(sizeof(struct texts));
@@ -246,6 +247,17 @@ int tedad_char_line(struct texts* text,int line){
     }
     fclose(file);
 }
+bool file_exists(const char *filename)
+{
+    FILE *fp = fopen(filename, "r");
+    bool being = false;
+    if (fp != NULL)
+    {
+        being = true;
+        fclose(fp); // close the file
+    }
+    return being;
+}
 int get_file_content(char filename[],struct texts* text){
     int MAX_LEN=1000;
     FILE *file;
@@ -444,8 +456,6 @@ void insert(char filename[], int line, int char_num, char string[]){
     }
     overwriting(filename,text); 
 }
-
-
 int pr_cat(char string[]){
     int l=strlen(string);
     char file1[l],file[l],folder[l],name[l];
@@ -475,7 +485,6 @@ void cat(char filename[]){
     }
     fclose(fptr);
 }
-
 void line_swap(struct texts* text, int line1, int line2){ //line1 to line2
     int i;
     int l=strlen(text->content[line1]);
@@ -559,15 +568,11 @@ void remove_text(char filename[],int line_n, int char_n, int size, int mode){
     struct texts * text=struct_saz();
     int i;
     get_file_content(filename,text);
-    printf("line=%d\n",line_n);
-    printf("1=%s\n",text->content[1]);
     file_backup(filename);
     if (mode==1){
         for ( i = 0; i < size; i++)
         {
-            printf("1=%s\n",text->content[line_n]);
             del_b(text,line_n,char_n);
-            printf("2=%s\n",text->content[line_n]);
             char_n--;
             if (char_n==0)
             {
@@ -596,10 +601,8 @@ void remove_text(char filename[],int line_n, int char_n, int size, int mode){
             }            
         }        
     }
-    printf("hoi!");
     overwriting(filename,text);
 }
-
 int pr_copy(char string[]){
     int l=strlen(string),num,line_n,char_n,md;
     char part1[l],part2[l],part3[l],pos[l],buf1[l],buf2[l],buf3[l];
@@ -641,8 +644,8 @@ int pr_copy(char string[]){
 void copy(char filename[],int line_n, int char_n, int size, int mode){
     struct texts * text=struct_saz();
     int i;
-    get_file_content("ali.txt",text);
-    file_backup("ali.txt");
+    get_file_content(filename,text);
+    file_backup(filename);
     if (mode==2)
     {
         for ( i = 0; i < size; i++)
@@ -675,10 +678,10 @@ void copy(char filename[],int line_n, int char_n, int size, int mode){
             }            
         }        
     }
-    clipboard[size]='\0';       
+    clipboard[size]='\0';
+    clip();       
     overwriting("ali.txt",text);
 }
-
 int pr_cut(char string[]){
     int l=strlen(string),num,line_n,char_n,md;
     char part1[l],part2[l],part3[l],pos[l],buf1[l],buf2[l],buf3[l];
@@ -715,13 +718,13 @@ int pr_cut(char string[]){
     else if(mode=='f'){
         md=2;
     }
-    copy(file,line_n,char_n,num,md);
+    cut(file,line_n,char_n,num,md);
 }
 void cut(char filename[],int line_n, int char_n, int size, int mode){
     copy(filename, line_n, char_n, size, mode);
     remove_text(filename, line_n, char_n, size, mode);
+    clip();
 }
-
 int pr_paste(char string[]){
     int l=strlen(string),i;
     char file[l],file1[l];
@@ -764,7 +767,6 @@ int pr_paste(char string[]){
 void paste(char filename[],int line_n, int char_n){
     insert(filename,line_n,char_n,clipboard);
 }
-
 int pr_undo(char string[]){
     int l= strlen(string);
     char part1[l],file[l];
@@ -778,7 +780,6 @@ int pr_undo(char string[]){
     }
     str_to_str(part1,file,first_ch(file,'/')+1,strlen(file)-1);
     strcpy(file,part1);
-    printf("%s\n",file);
     undo(file);
 }
 void undo (char filename[]){
@@ -794,7 +795,6 @@ void undo (char filename[]){
     overwriting(filename,text);
     
 }
-
 int pr_compare(char string[]){
     int l= strlen(string);
     char part1[l],part2[l],name1[l],name2[l];
@@ -864,8 +864,6 @@ void compare(char filename1[],char filename2[]){
         }
     }    
 }
-
-
 int check_wild(char *str1, char *str2) 
 { 
     if (*str1 != ' ' && *str2 == ' ')
@@ -1041,7 +1039,6 @@ int find_w(int n, int A[],int B[],char string1[], char string2[]){
     }
 
 }
-
 int min(int p1, int p2, int p3, int p4){
     int min=10000;
     if (p1!=-1 && p1<min)
@@ -1059,7 +1056,6 @@ int min(int p1, int p2, int p3, int p4){
     }
     return (min);    
 }
-
 int pr_find(char string[]){
     int l=strlen(string),num=1;
     char name[l],str[l],file[l],file2[l],jost[l];
@@ -1305,7 +1301,6 @@ int find(char filename[],char string[], int mode, int n){
     }
 
 }
-
 int pr_replace(char string[]){
     int l = strlen(string),num,n,md;
     char str1[l],str2[l],file[l],part1[l],part2[l],part3[l],part4[l];
@@ -1466,7 +1461,6 @@ int replace_all(char filename[], char str1[], char str2[]){
     }
 
 }
-
 int pr_grep(char string[]){
     int aption=1,mode=1;
     int l= strlen(string);
@@ -1585,7 +1579,6 @@ int grep(char listnames[][1000],char string[] ,int num, int mode){
     printf("%s",files);        
     }                
 }
-
 int pr_yab(char string[],int baz[], int baste[]){
     int i, l=strlen(string),tedad=0;
     for ( i = 0; i < l; i++)
@@ -1596,18 +1589,19 @@ int pr_yab(char string[],int baz[], int baste[]){
             baz[tedad]=i;
         }        
     }
-    tedad=0;
+    int t=tedad;
     for ( i = 0; i < l; i++)
     {
         if (string[i]=='}')
         {
-            tedad++;
             baste[tedad]=i;
+            tedad--;
         }        
     }
-    return(tedad);    
+    return(t);    
 }
 int tedad_bein(int tedad_pr, int bein[], int baz[], int baste[]){
+    int i;
     if (baz[tedad_pr]-baste[tedad_pr]==1)
     {
         bein[tedad_pr]=0;
@@ -1615,7 +1609,7 @@ int tedad_bein(int tedad_pr, int bein[], int baz[], int baste[]){
     else {
         bein[tedad_pr]=1;
     }
-    for ( i = tedad_pr-1; i < 0; i++)
+    for ( i = tedad_pr-1; i > 0; i--)
     {
         bein[i]=bein[i+1]+2;
     }
@@ -1630,9 +1624,11 @@ int start_end(int kol, int bein[], int start[], int end[], int tedad_pr){
     {
         start[i]=start[i-1]+1;
         end[i]=end[i-1]-1;
-    }    
+    }
 }
 int help_auto_indent(char string[],struct texts* text, int shomare, int tedad_pr, int baz[], int baste[], int start[],int end[], int bein[]) {
+    int i;
+    text->line=bein[1]+3;
     if (shomare==1)
     {
         if (string[0]!='{')
@@ -1650,39 +1646,66 @@ int help_auto_indent(char string[],struct texts* text, int shomare, int tedad_pr
             strcpy(text->content[end[1]],"}");
             strcat(text->content[end[1]],"\0");
         }
-    return(0);        
     }
-    if (string[0]!='{')
+    if (shomare!=1 && string[baz[shomare-1]+1]!='{')
     {
-        str_to_str(text->content[1],string,0,baz[1]-1);
-        strcat(text->content[1]," ");
-        strcat(text->content[1],"{");
-        strcat(text->content[1],"\0");
-        strcpy(text->content[end[1]],"}");
-        strcat(text->content[end[1]],"\0");
+        char temp[1000];
+        int len = strlen(text->content[start[shomare]]);
+        str_to_str(temp,string,baz[shomare-1]+1,baz[shomare]-1);
+        memset(text->content[start[shomare]]+len, '\t', shomare-1 );   
+        text->content[start[shomare]][len + shomare-1] = '\0';
+        strcat(text->content[start[shomare]],temp);
+        strcat(text->content[start[shomare]]," ");
+        strcat(text->content[start[shomare]],"{");
+        strcat(text->content[start[shomare]],"\0");
+        memset(text->content[end[shomare]]+len, '\t', shomare-1 );   
+        text->content[end[shomare]][len + shomare-1] = '\0';
+        strcat(text->content[end[shomare]],"}");
+        strcat(text->content[end[shomare]],"\0");
     }
-    else{
-        strcpy(text->content[1],"{");
-        strcat(text->content[1],"\0");
-        strcpy(text->content[end[1]],"}");
-        strcat(text->content[end[1]],"\0");
+    else if (shomare!=1 && string[baz[shomare-1]+1]=='{'){
+        int len = strlen(text->content[start[shomare]]);
+        memset(text->content[start[shomare]]+len, '\t', shomare-1 );   
+        text->content[start[shomare]][len + shomare-1] = '\0';
+        strcat(text->content[start[shomare]],"{");
+        strcat(text->content[start[shomare]],"\0");
+        memset(text->content[end[shomare]]+len, '\t', shomare-1 );   
+        text->content[end[shomare]][len + shomare-1] = '\0';
+        strcat(text->content[end[shomare]],"}");
+        strcat(text->content[end[shomare]],"\0");
+    }    
+    if (shomare==tedad_pr && (baste[shomare]-baz[shomare])>1){
+        int len = strlen(text->content[start[shomare]+1]);
+        char temp[1000];
+        str_to_str(temp,string,baz[shomare]+1,baste[shomare]-2);
+        memset(text->content[start[shomare]+1]+len, '\t', shomare);
+        text->content[start[shomare]+1][len + shomare+1] = '\0';
+        strcat(text->content[start[shomare]+1],temp);
+        strcat(text->content[start[shomare]+1],"\0");
     }
 
-
-    
-    
 }
-
-
-
+int pr_auto_indent(char string[]){
+    int l= strlen(string);
+    char part1[l],file[l];
+    str_to_str(part1,string,payan_yab(string,"auto-indent")+1,l-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(file,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(file,part1,first_ch(part1,' ')+1,strlen(part1)-1);
+    }
+    str_to_str(part1,file,first_ch(file,'/')+1,strlen(file)-1);
+    strcpy(file,part1);
+    auto_indent(file);
+}
 int auto_indent(char filename[]){
-    int i;
     struct texts * text= struct_saz();
     get_file_content(filename,text);
-    file_backup(filename);
-    struct texts * temp= struct_saz();
     int l=strlen(text->content[1]);
-    int tedad=1;
+    file_backup(filename);
+    int tedad=1,i;
     while (tedad!=0)
     {
         tedad=0;
@@ -1703,35 +1726,68 @@ int auto_indent(char filename[]){
             }
         }
     }
-    int first= first_ch(text->content[1],'{');
-    int last= last_ch(text->content[1],'}');
-    char parts[l][l];
-    str_to_str(parts[1],text->content[1],0,first-1);
-    str_to_str(parts[2],text->content[1],first+1,last-1);
-    strcpy(text->content[1],parts[1]);
-    if (parts[1][strlen(parts[1])]!=NULL)
+    l=strlen(text->content[1]);
+    char string[l];
+    int bein[l],baz[l],baste[l],start[l],end[l];
+    strcpy(string,text->content[1]);    
+    int tedad_pr=pr_yab(string,baz,baste);
+    int kol=tedad_bein(tedad_pr,bein,baz,baste);
+    start_end(kol,bein,start,end,tedad_pr);
+    for (i = 1; i <= tedad_pr; i++)
     {
-        strcat(text->content[1]," ");
-    }    
-    strcat(text->content[1],"{");
-    strcpy(text->content[2],"   ");
-    strcat(text->content[2],parts[2]);
-    strcpy(text->content[3],"}");
+        help_auto_indent(string,text,i,tedad_pr,baz,baste,start,end,bein);
+    }
     overwriting(filename,text);
-
-
 }
+int pr_tree(char string[]){
+    int depth;
+    char part[strlen(string)];
+    str_to_str(part,string,nom_ch(string,' ',1)+1,strlen(string)-1);
+    depth=convet_to_num(part);
+    directory_tree(depth);
+}
+int tree_help(char name[], int indent, int depth)
+{
+    DIR *dir;
+    struct dirent *entry;
 
+    if (indent>depth && depth!=-1)
+    {
+        return -1;
+    }
+    
+    if (!(dir = opendir(name)))
+        return -1;
+
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_DIR) {
+            char path[1024];
+            if (strcmp(entry->d_name, ".") != 0 && strcmp(entry->d_name, "..") != 0){
+                strcpy(path,name);
+                strcat(path,"/");
+                strcat(path,entry->d_name);
+                printf("%*sD|--%s\n", 4*indent, "", entry->d_name);
+                tree_help(path, indent + 1, depth);
+            }
+        } 
+        else {
+            printf("%*sF|--%s\n", 4*indent, "", entry->d_name);
+        }
+    }
+    closedir(dir);
+}
 int directory_tree(int depth){
     if (depth<-1){
         printf("invalid depth\n");
     }
     else{
-
+        printf("D: directory(or folder)\nF: file\n");
+        printf("<<<<<<<<<<<<tree-%dD>>>>>>>>>>>>\n",depth);
+        printf("root:\n");
+        tree_help("./root",0,depth);
+        printf("<<<<<<<<<<<<tree-%dD>>>>>>>>>>>>\n",depth);
     }
 }
-
-
 void matlob_saz(char string[]){
     int l= strlen(string);
     char temp1[l],temp2[l],temp3[l];
@@ -1768,13 +1824,13 @@ void matlob_saz(char string[]){
         }        
     }    
 }
-
 int command_detection(char s[]){  
-    int t=0;
+    int t=0,r=0;
     while (t<14)
     {
         if (check_e2s(s,commands[t])==1)
         {
+            r=1;
             break;
         }
         t=t+1;
@@ -1791,11 +1847,43 @@ int command_detection(char s[]){
     (t==9) ? pr_find(s) : printf("");
     (t==10) ? pr_replace(s) : printf("");
     (t==11) ? pr_grep(s) : printf("");
-    //return(-1);       
+    (t==12) ? pr_auto_indent(s) : printf("");
+    (t==13) ? pr_tree(s) : printf("");
+    if (r==0)
+    {
+        printf("invalid command\n");
+        return(-1);       
+    }    
+}
+int clip(){
+    int t=file_exists("Clipboard.txt");
+    if (t){
+        FILE *fp = fopen("Clipboard.txt", "w");
+        char s[strlen(clipboard)];
+        strcpy(s,clipboard);
+        insert("Clipboard.txt",1,0,s);
     }
-
+    else{
+        FILE *fp = fopen("Clipboard.txt", "w");
+        char s[strlen(clipboard)];
+        strcpy(s,clipboard);
+        insert("Clipboard.txt",1,0,s);
+    }
+}
+int clip_ex(){
+    int t=file_exists("Clipboard.txt");
+    if (t){
+        struct texts * text= struct_saz();
+        get_file_content("Clipboard.txt",text);
+        strcpy(clipboard,text->content[1]);
+        for (int i = 2; i <= (text->line); i++)
+        {
+            strcat(clipboard,text->content[i]);
+        }        
+    }
+}
 int main(){
-    //example
+    clip_ex();
     char user_input[1000],byn[1000];
     printf("~~~ ");
     fgets (user_input, 1000, stdin);
@@ -1809,7 +1897,9 @@ int main(){
         fgets (user_input, 1000, stdin);
         str_to_str(byn,user_input,0,strlen(user_input)-2);
         strcpy(user_input,byn);
-    }    
+    } 
+    printf("good bye!\n"); 
+    getchar();  
 }
 
 
