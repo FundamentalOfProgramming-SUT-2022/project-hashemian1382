@@ -11,7 +11,7 @@
 +--------------------------------------------------------------------------------+
 |  AUTHOR :   Ali Hashemian                                                      |
 +--------------------------------------------------------------------------------|
-| Version: 0.5.0     Date of last revision: 2023-1-23                            |
+| Version: 0.9.1     Date of last revision: 2023-1-23                            |
 +--------------------------------------------------------------------------------+
 | DESCRIPTION:                                                                   |
 |        This program is designed as the final project                           | 
@@ -305,6 +305,8 @@ void overwriting(char filename[],struct texts* text){
     fclose(file);      
 }
 void file_backup(char file_name[]){
+    struct texts * text = struct_saz();
+    get_file_content(file_name,text);
     char filename[strlen(file_name)];
     if (file_name[0]=='/')
     {
@@ -312,9 +314,7 @@ void file_backup(char file_name[]){
     }
     else{
         str_to_str(filename,file_name,0,strlen(file_name)-1);
-    }
-    
-    FILE *fptr1, *fptr2;
+    }    
     int l=strlen(filename);
     char name[l];
     char folder[l];
@@ -325,13 +325,8 @@ void file_backup(char file_name[]){
     str_to_str(address,folder,0,strlen(folder));
     strcat(b_file_name,name);
     strcat(address,b_file_name);
-    fptr1 = fopen(filename, "r");
-    fptr2 = fopen(address, "w");
-    c = fgetc(fptr1);
-    while (c!= EOF){
-        putc(c,fptr2);
-        c = fgetc(fptr1);
-    } 
+    overwriting(address,text);
+
 }
 int pr_create_file(char string[]){
     int l=strlen(string);
@@ -1158,7 +1153,6 @@ int pr_find(char string[]){
     }
     find(name,jost,md,n);
 }
-
 int find(char filename[],char string[], int mode, int n){
     int i,j,t,tt,k;
     struct texts * text= struct_saz();
@@ -1312,39 +1306,96 @@ int find(char filename[],char string[], int mode, int n){
 
 }
 
-int grep(char listnames[][30],char string[] ,int num, int mode){
-    int i,j,t,k;
-    struct texts * text[num];
-    int l1=200;
-    int l2=strlen(string);
-    int space1[l1],space2[l2],start1[l1],payan1[l1],start2[l2],payan2[l2],A[100],B[100];
-
-    for ( i = 0; i < num; i++)
+int pr_replace(char string[]){
+    int l = strlen(string),num,n,md;
+    char str1[l],str2[l],file[l],part1[l],part2[l],part3[l],part4[l];
+    str_to_str(part1,string,payan_yab(string,"--str1")+1,start_yab(string,"--str2")-1);
+    str_to_str(part2,string,payan_yab(string,"--str2")+1,start_yab(string,"--file")-1);
+    str_to_str(part3,string,payan_yab(string,"--file")+1,l-1);
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
     {
-        text[i]= struct_saz();
-        get_file_content(listnames[i],text[i]);
+        str_to_str(str1,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
     }
-    
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(str1,part1,first_ch(part1,' ')+1,last_ch(part1,' ')-1);
+    }
+
+    if (first_ch(part2,'"')!=-1 && last_ch(part2,'"')!=-1)
+    {
+        str_to_str(str2,part2,first_ch(part2,'"')+1,last_ch(part2,'"')-1);
+    }
+    else if (first_ch(part2,' ')!=-1 && last_ch(part2,' ')!=-1){
+        str_to_str(str2,part2,first_ch(part2,' ')+1,last_ch(part2,' ')-1);
+    }
+
+    int mode=1;
+    if (start_yab(part3,"-at")!=-1)
+    {
+        mode*=3;
+        char number[l];
+        str_to_str(number,part3,payan_yab(part3,"-at")+2,strlen(part3)-1);
+        num=convet_to_num(number);
+    }
+    if (start_yab(part3,"-all")!=-1)
+    {
+        mode*=7;
+    }
+    if (mode==21){
+        printf("Sorry,at and all cannot come together.\n");
+        return(-1);
+    }
+
+    else if (mode==3){
+        int p=start_yab(part3,"-at");
+        str_to_str(part4,part3,0,p-1);
+    }
+    else if (mode==7){
+        int p=start_yab(part3,"-all");
+        str_to_str(part4,part3,0,p-1);
+    }
+    else{
+        str_to_str(part4,part3,0,strlen(part3)-1);
+    }
+
+    if (nom_ch(part4,'"',1)!=-1 && nom_ch(part4,'"',2)!=-1)
+    {
+        str_to_str(file,part4,first_ch(part4,'/')+1,last_ch(part4,'"')-1);
+    }
+    else if (nom_ch(part4,' ',1)!=-1 && nom_ch(part4,' ',2)!=-1){
+        str_to_str(file,part4,first_ch(part4,'/')+1,last_ch(part4,' ')-1);
+    }
+    else if (nom_ch(part4,' ',1)!=-1 && nom_ch(part4,' ',2)==-1){
+        str_to_str(file,part4,first_ch(part4,'/')+1,strlen(part4)-1);
+    }
+    if (mode==1){
+        md=1;
+        n=1;
+    }
+    if (mode==3)
+    {
+        md=1;
+        n=num;
+    }
+    if (mode==7)
+    {
+        md=2;
+        n=1;
+    }
+    replace(file,str1,str2,md,n);
+}
+int replace(char filename[], char str1[], char str2[], int mode, int num){
+    file_backup(filename);
     if (mode==1)
     {
-        for ( i = 0; i < num; i++)
-        {
-            for ( j = 1; j <= text[i]->line; j++)
-            {
-                t=find_help(A,B,text[i]->content[j],string,space1,space2,start1,payan1,start2,payan2);
-                if (t>0)
-                {
-                    printf("%s: %s",listnames[i],text[i]->content[j]);
-                }        
-            }
-        }        
-    }        
+        replace_at(filename,str1,str2,num);
+    }
+    else if (mode==2)
+    {
+        replace_all(filename,str1,str2);
+    }
+    
+    
 }
-
-int raplace(char filename[], char str1[], char str2[], int mode, int num){
-
-}
-
 int replace_at(char filename[], char str1[], char str2[], int num){
     int i,j,t,k,n=num,x,y;
     struct texts * text=struct_saz();
@@ -1386,7 +1437,6 @@ int replace_at(char filename[], char str1[], char str2[], int num){
 
 
 }
-
 int replace_all(char filename[], char str1[], char str2[]){
     int i,j,t=0,k,x,y;
     struct texts * text= struct_saz();
@@ -1417,7 +1467,215 @@ int replace_all(char filename[], char str1[], char str2[]){
 
 }
 
-int closing_pairs(char filename[]){
+int pr_grep(char string[]){
+    int aption=1,mode=1;
+    int l= strlen(string);
+    char part0[l],part1[l],str[l],part2[l],file_name[l][1000],file[l];
+    int space[l];
+    str_to_str(part0,string,payan_yab(string,"grep")+1,start_yab(string,"--str")-1);
+    str_to_str(part1,string,payan_yab(string,"--str")+1,start_yab(string,"--files")-1);
+    str_to_str(part2,string,payan_yab(string,"--files")+1,l-1);
+    if (start_yab(part0,"-c")!=-1){
+        aption*=2;
+    }
+    else if (start_yab(part0,"-l")!=-1){
+        aption*=3;
+    }
+    if (first_ch(part1,'"')!=-1 && last_ch(part1,'"')!=-1)
+    {
+        str_to_str(str,part1,first_ch(part1,'"')+1,last_ch(part1,'"')-1);
+    }
+    else if (first_ch(part1,' ')!=-1 && last_ch(part1,' ')!=-1){
+        str_to_str(str,part1,first_ch(part1,' ')+1,last_ch(part1,' ')-1);
+    }
+    int t=0;
+    for (int i = 0; i < strlen(part2)-1; i++)
+    {
+        if (part2[i]==' ')
+        {
+            space[t]=i;
+            t=t+1;
+        }
+    }
+    space[t]=strlen(part2)-1;
+    for (int i = 0; i < t-1; i++)
+    {
+        str_to_str(file,part2,space[i]+1,space[i+1]-1);
+        str_to_str(file_name[i],file,first_ch(file,'/')+1,strlen(file)-1);
+    }
+    str_to_str(file,part2,space[t-1]+1,strlen(part2)-1);
+    str_to_str(file_name[t-1],file,first_ch(file,'/')+1,strlen(file)-1);
+    if (aption==2)
+    {
+        mode=2;
+    }
+    else if (aption==3)
+    {
+        mode=3;
+    }
+    else if (aption==6){
+        printf("Sorry,aption l and c cannot come together.\n");
+        return (0);
+    }        
+    grep(file_name,str,t,mode); 
+}
+int grep(char listnames[][1000],char string[] ,int num, int mode){
+    int i,j,t,k;
+    struct texts * text[num];
+    int l1=200;
+    int l2=strlen(string);
+    int space1[l1],space2[l2],start1[l1],payan1[l1],start2[l2],payan2[l2],A[100],B[100];
+    for ( i = 0; i < num; i++)
+    {
+        text[i]= struct_saz();
+        get_file_content(listnames[i],text[i]);
+    }    
+    if (mode==1)
+    {
+        for ( i = 0; i < num; i++)
+        {
+            for ( j = 1; j <= text[i]->line; j++)
+            {
+                t=find_help(A,B,text[i]->content[j],string,space1,space2,start1,payan1,start2,payan2);
+                if (t>0)
+                {
+                    printf("%s: %s\n",listnames[i],text[i]->content[j]);
+                }        
+            }
+        }        
+    }        
+    if (mode==2)
+    {
+        int count=0;
+        for ( i = 0; i < num; i++)
+        {
+            for ( j = 1; j <= text[i]->line; j++)
+            {
+                t=find_help(A,B,text[i]->content[j],string,space1,space2,start1,payan1,start2,payan2);
+                if (t>0)
+                {
+                    count++;
+                }        
+            }
+        } 
+    printf("%d\n",count);       
+    }
+    if (mode==3)
+    {
+        char files[(num*100)];
+        strcpy(files,"");
+        int count=0;
+        for ( i = 0; i < num; i++)
+        {
+            count=0;
+            for ( j = 1; j <= text[i]->line; j++)
+            {
+                t=find_help(A,B,text[i]->content[j],string,space1,space2,start1,payan1,start2,payan2);
+                if (t>0)
+                {
+                    count++;
+                }        
+            }
+            if (count>0)
+            {
+                strcat(files,listnames[i]);
+                strcat(files,"\n");
+            }            
+        }
+    printf("%s",files);        
+    }                
+}
+
+int pr_yab(char string[],int baz[], int baste[]){
+    int i, l=strlen(string),tedad=0;
+    for ( i = 0; i < l; i++)
+    {
+        if (string[i]=='{')
+        {
+            tedad++;
+            baz[tedad]=i;
+        }        
+    }
+    tedad=0;
+    for ( i = 0; i < l; i++)
+    {
+        if (string[i]=='}')
+        {
+            tedad++;
+            baste[tedad]=i;
+        }        
+    }
+    return(tedad);    
+}
+int tedad_bein(int tedad_pr, int bein[], int baz[], int baste[]){
+    if (baz[tedad_pr]-baste[tedad_pr]==1)
+    {
+        bein[tedad_pr]=0;
+    }
+    else {
+        bein[tedad_pr]=1;
+    }
+    for ( i = tedad_pr-1; i < 0; i++)
+    {
+        bein[i]=bein[i+1]+2;
+    }
+    int kol=bein[1]+2;
+    return(kol);    
+}
+int start_end(int kol, int bein[], int start[], int end[], int tedad_pr){
+    int i;
+    start[1]=1;
+    end[1]=kol;
+    for ( i = 2; i <= tedad_pr; i++)
+    {
+        start[i]=start[i-1]+1;
+        end[i]=end[i-1]-1;
+    }    
+}
+int help_auto_indent(char string[],struct texts* text, int shomare, int tedad_pr, int baz[], int baste[], int start[],int end[], int bein[]) {
+    if (shomare==1)
+    {
+        if (string[0]!='{')
+        {
+            str_to_str(text->content[1],string,0,baz[1]-1);
+            strcat(text->content[1]," ");
+            strcat(text->content[1],"{");
+            strcat(text->content[1],"\0");
+            strcpy(text->content[end[1]],"}");
+            strcat(text->content[end[1]],"\0");
+        }
+        else{
+            strcpy(text->content[1],"{");
+            strcat(text->content[1],"\0");
+            strcpy(text->content[end[1]],"}");
+            strcat(text->content[end[1]],"\0");
+        }
+    return(0);        
+    }
+    if (string[0]!='{')
+    {
+        str_to_str(text->content[1],string,0,baz[1]-1);
+        strcat(text->content[1]," ");
+        strcat(text->content[1],"{");
+        strcat(text->content[1],"\0");
+        strcpy(text->content[end[1]],"}");
+        strcat(text->content[end[1]],"\0");
+    }
+    else{
+        strcpy(text->content[1],"{");
+        strcat(text->content[1],"\0");
+        strcpy(text->content[end[1]],"}");
+        strcat(text->content[end[1]],"\0");
+    }
+
+
+    
+    
+}
+
+
+
+int auto_indent(char filename[]){
     int i;
     struct texts * text= struct_saz();
     get_file_content(filename,text);
@@ -1531,6 +1789,8 @@ int command_detection(char s[]){
     (t==7) ? pr_undo(s) : printf("");
     (t==8) ? pr_compare(s) : printf("");
     (t==9) ? pr_find(s) : printf("");
+    (t==10) ? pr_replace(s) : printf("");
+    (t==11) ? pr_grep(s) : printf("");
     //return(-1);       
     }
 
@@ -1541,6 +1801,7 @@ int main(){
     fgets (user_input, 1000, stdin);
     str_to_str(byn,user_input,0,strlen(user_input)-2);
     strcpy(user_input,byn);
+    matlob_saz(user_input);
     while (strcmp(user_input,"END")) {
         matlob_saz(user_input);
         command_detection(user_input);
