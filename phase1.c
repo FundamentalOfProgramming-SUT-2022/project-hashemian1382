@@ -161,18 +161,6 @@ int check_e2s(char s1[],char s2[]){
     }
     return(1); 
 }
-int tashkis_dorost_baz_shodan_file(char path[]) {
-    FILE * file;
-    file = fopen(path, "r");
-    if (file == NULL)
-    {
-        printf("\nUnable to open file.\n");
-        printf("Please check if file exists and you have read privilege.\n");
-        return(-1);
-    }
-    else
-        return(1);
-}
 void jodasaz_address(char string[],int n,int x,int y){
     for (int i = x; i <= y; i++)
     {
@@ -254,7 +242,7 @@ bool file_exists(const char *filename)
     if (fp != NULL)
     {
         being = true;
-        fclose(fp); // close the file
+        fclose(fp); 
     }
     return being;
 }
@@ -373,6 +361,7 @@ void createfile(char folder_names[],char file_name[]){
     if (fp==NULL){
         fp = fopen (address, "w");
         fclose (fp);
+        printf("The operation was successful.\n");
     }
     else{
         printf("This file named: %s ,has already been created.\n",address);
@@ -426,11 +415,14 @@ int pr_insert(char string[]){
     str_to_str(num2,pos,first_ch(pos,':')+1,l-1);
     char filename[strlen(file)];
     str_to_str(filename,file,1,strlen(file));
-    printf("%s\n%s\n%s\n%s\n",file,str,num1,num2);
     insert(filename,convet_to_num(num1),convet_to_num(num2),str);
 }
 void insert(char filename[], int line, int char_num, char string[]){
-    printf("%s %d %d %s\n",filename,line,char_num, string);
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     struct texts * text= struct_saz();
     get_file_content(filename,text);
     file_backup(filename);
@@ -474,7 +466,12 @@ int pr_cat(char string[]){
     strcat(file,name);
     cat(file);
 }
-void cat(char filename[]){
+int cat(char filename[]){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     FILE *fptr;
     fptr = fopen(filename, "r");
     char c = fgetc(fptr);
@@ -564,7 +561,12 @@ int pr_remove(char string[]){
     }
     remove_text(file,line_n,char_n,num,md);
 }
-void remove_text(char filename[],int line_n, int char_n, int size, int mode){
+int remove_text(char filename[],int line_n, int char_n, int size, int mode){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     struct texts * text=struct_saz();
     int i;
     get_file_content(filename,text);
@@ -641,7 +643,12 @@ int pr_copy(char string[]){
     }
     copy(file,line_n,char_n,num,md);
 }
-void copy(char filename[],int line_n, int char_n, int size, int mode){
+int copy(char filename[],int line_n, int char_n, int size, int mode){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     struct texts * text=struct_saz();
     int i;
     get_file_content(filename,text);
@@ -720,7 +727,12 @@ int pr_cut(char string[]){
     }
     cut(file,line_n,char_n,num,md);
 }
-void cut(char filename[],int line_n, int char_n, int size, int mode){
+int cut(char filename[],int line_n, int char_n, int size, int mode){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     copy(filename, line_n, char_n, size, mode);
     remove_text(filename, line_n, char_n, size, mode);
     clip();
@@ -764,8 +776,14 @@ int pr_paste(char string[]){
     paste(file1,n1,n2);
 
 }
-void paste(char filename[],int line_n, int char_n){
+int paste(char filename[],int line_n, int char_n){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     insert(filename,line_n,char_n,clipboard);
+    printf("The operation was successful.\n");
 }
 int pr_undo(char string[]){
     int l= strlen(string);
@@ -782,7 +800,12 @@ int pr_undo(char string[]){
     strcpy(file,part1);
     undo(file);
 }
-void undo (char filename[]){
+int undo (char filename[]){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     FILE *fptr1, *fptr2;
     char c,b_file_name[1000],cd1[1000],cd2[1000]="b_";
     str_to_str(b_file_name,filename,0,last_ch(filename,'/'));
@@ -791,8 +814,8 @@ void undo (char filename[]){
     strcat(b_file_name,cd2);
     struct texts * text= struct_saz();
     get_file_content(b_file_name,text);
-    printf("%s\n",text->content[1]);
     overwriting(filename,text);
+    printf("The operation was successful.\n");
     
 }
 int pr_compare(char string[]){
@@ -828,7 +851,17 @@ int pr_compare(char string[]){
 
     compare(part1,part2);
 }
-void compare(char filename1[],char filename2[]){
+int compare(char filename1[],char filename2[]){
+    int t1=file_exists(filename1);
+    if (!t1){
+        printf("No such file found.\n");
+        return 0;
+    }
+    int t2=file_exists(filename2);
+    if (!t2){
+        printf("No such file found.\n");
+        return 0;
+    }
     int i;
     struct texts* text1=struct_saz();
     struct texts* text2=struct_saz();
@@ -915,10 +948,7 @@ int tafkik_spaces(char string[],int l,char jodashode[][l],int space[],int start[
         str_to_str(jodashode[0],string,0,l-1);
         start[0]=0;
         payan[0]=l-1;
-        //printf("s=%d p=%d *** ",start[0],payan[0]);
     }
-    //printf("\n");
-
     return(t);       
 }
 int find_help(int A[],int B[],char string1[], char string2[],int space1[],int space2[],int start1[],int payan1[],int start2[],int payan2[]){
@@ -1150,6 +1180,11 @@ int pr_find(char string[]){
     find(name,jost,md,n);
 }
 int find(char filename[],char string[], int mode, int n){
+    int ttt=file_exists(filename);
+    if (!ttt){
+        printf("No such file found.\n");
+        return 0;
+    }
     int i,j,t,tt,k;
     struct texts * text= struct_saz();
     int l1=200;
@@ -1379,6 +1414,11 @@ int pr_replace(char string[]){
     replace(file,str1,str2,md,n);
 }
 int replace(char filename[], char str1[], char str2[], int mode, int num){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     file_backup(filename);
     if (mode==1)
     {
@@ -1388,7 +1428,7 @@ int replace(char filename[], char str1[], char str2[], int mode, int num){
     {
         replace_all(filename,str1,str2);
     }
-    
+    printf("The operation was successful.\n");
     
 }
 int replace_at(char filename[], char str1[], char str2[], int num){
@@ -1514,13 +1554,18 @@ int pr_grep(char string[]){
     grep(file_name,str,t,mode); 
 }
 int grep(char listnames[][1000],char string[] ,int num, int mode){
-    int i,j,t,k;
+    int i,j,t,k,tt;
     struct texts * text[num];
     int l1=200;
     int l2=strlen(string);
     int space1[l1],space2[l2],start1[l1],payan1[l1],start2[l2],payan2[l2],A[100],B[100];
     for ( i = 0; i < num; i++)
     {
+        int tt=file_exists(listnames[i]);
+        if (!tt){
+            printf("No such file found.\n");
+            return 0;
+        }
         text[i]= struct_saz();
         get_file_content(listnames[i],text[i]);
     }    
@@ -1701,6 +1746,11 @@ int pr_auto_indent(char string[]){
     auto_indent(file);
 }
 int auto_indent(char filename[]){
+    int t=file_exists(filename);
+    if (!t){
+        printf("No such file found.\n");
+        return 0;
+    }
     struct texts * text= struct_saz();
     get_file_content(filename,text);
     int l=strlen(text->content[1]);
@@ -1738,6 +1788,7 @@ int auto_indent(char filename[]){
         help_auto_indent(string,text,i,tedad_pr,baz,baste,start,end,bein);
     }
     overwriting(filename,text);
+    printf("The operation was successful.\n");
 }
 int pr_tree(char string[]){
     int depth;
@@ -1884,6 +1935,7 @@ int clip_ex(){
 }
 int main(){
     clip_ex();
+    mkdir("root");
     char user_input[1000],byn[1000];
     printf("~~~ ");
     fgets (user_input, 1000, stdin);
